@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/labstack/echo/v4"
 	"github.com/souviks72/notes-app-api/config"
+	"github.com/souviks72/notes-app-api/handlers"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -29,13 +31,21 @@ func init() {
 		fmt.Printf("Error connecting to db %+v", err)
 	}
 
-	defer func() {
-		err = mongoClient.Disconnect(context.TODO())
-		if err != nil {
-			fmt.Printf("Error disconnecting from db %+v", err)
-		}
-	}()
+	// defer func() {
+	// 	err = mongoClient.Disconnect(context.TODO())
+	// 	if err != nil {
+	// 		fmt.Printf("Error disconnecting from db %+v", err)
+	// 	}
+	// }()
 
 	db = mongoClient.Database(cfg.DBName)
 	notesCol = db.Collection(cfg.NotesCollection)
+}
+
+func main() {
+	e := echo.New()
+	notesHandler := &handlers.NotesHandler{Coll: notesCol}
+	e.POST("/note", notesHandler.CreateNote)
+
+	e.Logger.Fatal(e.Start(":8081"))
 }
