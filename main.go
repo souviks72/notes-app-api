@@ -31,13 +31,6 @@ func init() {
 		fmt.Printf("Error connecting to db %+v", err)
 	}
 
-	// defer func() {
-	// 	err = mongoClient.Disconnect(context.TODO())
-	// 	if err != nil {
-	// 		fmt.Printf("Error disconnecting from db %+v", err)
-	// 	}
-	// }()
-
 	db = mongoClient.Database(cfg.DBName)
 	notesCol = db.Collection(cfg.NotesCollection)
 }
@@ -46,6 +39,7 @@ func main() {
 	e := echo.New()
 	notesHandler := &handlers.NotesHandler{Coll: notesCol}
 	e.POST("/note", notesHandler.CreateNote)
-
+	e.GET("/note/:id", notesHandler.GetNote)
+	e.GET("/", notesHandler.GetAllNotes)
 	e.Logger.Fatal(e.Start(":8081"))
 }

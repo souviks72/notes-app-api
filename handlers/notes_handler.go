@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/souviks72/notes-app-api/dbiface"
+	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -40,13 +41,48 @@ func (h NotesHandler) CreateNote(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid request body"})
 	}
 
-	note.DateCreated = time.Now().String()
-	note.DateModified = time.Now().String()
+	note.DateCreated = time.Now().Local().String()
+	note.DateModified = time.Now().Local().String()
 
 	_, err = h.Coll.InsertOne(context.Background(), note)
 	if err != nil {
 		fmt.Printf("Unable to insert note to db %+v", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Unable to insert note to db"})
 	}
+	return c.JSON(http.StatusOK, note)
+}
+
+func (h *NotesHandler) GetAllNotes(c echo.Context) error {
+	var note Notes
+	var notes []Notes
+	findCursor, err := h.Coll.Find(context.Background(), bson.M{})
+	if err != nil {
+		fmt.Printf("Error fetching results %+v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error fetching results"})
+	}
+
+	for findCursor.Next(context.Background()) {
+		err = findCursor.Decode(&note)
+		if err != nil {
+			fmt.Printf("Error decoding cursor results %+v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error decoding cursor results"})
+		}
+		notes = append(notes, note)
+	}
+
+	return c.JSON(http.StatusOK, notes)
+}
+
+func (h *NotesHandler) GetNote(c echo.Context) error {
+	var note Notes
+
+	id := c.QueryParam("id")
+	queryFilter := bson.M{"_id": id}
+	err := h.Coll.FindOne(context.Background(), queryFilter).Decode(&note)
+	if err != nil {
+		fmt.Printf("Error fetching results %+v\n", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error fetching results"})
+	}
+
 	return c.JSON(http.StatusOK, note)
 }
