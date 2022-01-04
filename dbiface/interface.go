@@ -16,4 +16,7 @@ type CollectionAPI interface {
 
 	FindOne(ctx context.Context, filter interface{},
 		opts ...*options.FindOneOptions) *mongo.SingleResult
+
+	FindOneAndDelete(ctx context.Context, filter interface{},
+		opts ...*options.FindOneAndDeleteOptions) *mongo.SingleResult
 }

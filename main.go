@@ -38,8 +38,9 @@ func init() {
 func main() {
 	e := echo.New()
 	notesHandler := &handlers.NotesHandler{Coll: notesCol}
-	e.POST("/note", notesHandler.CreateNote)
 	e.GET("/note/:id", notesHandler.GetNote)
+	e.DELETE("/note/:id", notesHandler.DeleteNote)
+	e.POST("/note", notesHandler.CreateNote)
 	e.GET("/", notesHandler.GetAllNotes)
 	e.Logger.Fatal(e.Start(":8081"))
 }

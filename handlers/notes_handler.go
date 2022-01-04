@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/souviks72/notes-app-api/dbiface"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -76,12 +77,37 @@ func (h *NotesHandler) GetAllNotes(c echo.Context) error {
 func (h *NotesHandler) GetNote(c echo.Context) error {
 	var note Notes
 
-	id := c.QueryParam("id")
-	queryFilter := bson.M{"_id": id}
-	err := h.Coll.FindOne(context.Background(), queryFilter).Decode(&note)
+	id := c.Param("id")
+	hexId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		fmt.Printf("Unable to convert id to hex %+v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Unable to convert id to hex"})
+	}
+	queryFilter := bson.M{"_id": hexId}
+	err = h.Coll.FindOne(context.Background(), queryFilter).Decode(&note)
 	if err != nil {
 		fmt.Printf("Error fetching results %+v\n", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error fetching results"})
+	}
+
+	return c.JSON(http.StatusOK, note)
+}
+
+func (h *NotesHandler) DeleteNote(c echo.Context) error {
+	var note Notes
+
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		fmt.Printf("Unable to convert id to hex %+v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Unable to convert id to hex"})
+	}
+
+	queryFilter := bson.M{"_id": id}
+	res := h.Coll.FindOneAndDelete(context.Background(), queryFilter)
+	err = res.Decode(&note)
+	if err != nil {
+		fmt.Printf("Error decoding result %+v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error decoding result"})
 	}
 
 	return c.JSON(http.StatusOK, note)
